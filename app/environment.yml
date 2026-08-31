@@ -1,4 +1,4 @@
-name: rehab
+name: xiao-pressure
 channels:
   - defaults
 dependencies:

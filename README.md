@@ -32,7 +32,7 @@ pio run -t upload
 ```bash
 cd app
 conda env create -f environment.yml
-conda activate rehab
+conda activate xiao-pressure
 python pressure_monitor.py
 ```
 

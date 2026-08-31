@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# conda activate rehab
+# conda activate xiao-pressure
 """Pressure Sensor Monitor - PyQt6"""
 import sys, re, base64, threading, asyncio, csv, time
 from collections import deque
