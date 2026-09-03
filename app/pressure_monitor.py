@@ -186,11 +186,28 @@ class FootWidget(QWidget):
 
     def update_vals(self, vals):
         self.vals = vals[:]
-        tw = sum(max(v,0) for v in vals)
+
+        weights = [3.5, 2.0, 2.0, 1.0, 1.0, 2]
+        weighted_vals = [
+            max(vals[i], 0) * weights[i]
+            for i in range(6)
+        ]
+
+        tw = sum(weighted_vals)
+
         if tw > 0.01:
-            cx = sum(self.pos[i][0]*max(vals[i],0) for i in range(6))/tw
-            cy = sum(self.pos[i][1]*max(vals[i],0) for i in range(6))/tw
-            self.trail.append((cx/100, cy/100))
+            cx = sum(
+                self.pos[i][0] * weighted_vals[i]
+                for i in range(6)
+            ) / tw
+
+            cy = sum(
+                self.pos[i][1] * weighted_vals[i]
+                for i in range(6)
+            ) / tw
+
+            self.trail.append((cx / 100, cy / 100))
+
         self.update()
 
     def clear_cop(self):
