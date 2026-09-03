@@ -45,7 +45,7 @@ void setup() {
   } else {
     // BLE 模式
     if (BLE.begin()) {
-      BLE.setLocalName("Pressure-1");
+      BLE.setLocalName("Pressure-2");
       BLE.setAdvertisedService(uartService);
       uartService.addCharacteristic(txChar);
       BLE.addService(uartService);

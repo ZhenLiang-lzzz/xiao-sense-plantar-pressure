@@ -183,6 +183,37 @@ class FootWidget(QWidget):
         self.setMinimumSize(150, 340)
         self.setMaximumWidth(200)
         self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
+        self._scaled_foot = None
+        self._scaled_size = None
+        self._scaled_offset = (0, 0)
+
+    def _update_scaled_image(self):
+        W, H = self.width(), self.height()
+
+        if self._foot_img.isNull():
+            self._scaled_foot = None
+            return
+
+        current_size = (W, H)
+
+        # size 没变就不重新缩放
+        if (self._scaled_foot is not None 
+            and self._scaled_size == current_size):
+            return
+
+        scaled = self._foot_img.scaled(
+            W,
+            H,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+
+        xo = (W - scaled.width()) // 2
+        yo = (H - scaled.height()) // 2
+
+        self._scaled_foot = scaled
+        self._scaled_size = current_size
+        self._scaled_offset = (xo, yo)
 
     def update_vals(self, vals):
         self.vals = vals[:]
@@ -215,13 +246,24 @@ class FootWidget(QWidget):
         self.update()
 
     def _img_rect(self):
-        W,H = self.width(), self.height()
-        if self._foot_img.isNull():
-            return 0,0,W,H
-        scaled = self._foot_img.scaled(W,H,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation)
-        xo = (W-scaled.width())//2
-        yo = (H-scaled.height())//2
-        return xo, yo, scaled.width(), scaled.height()
+        self._update_scaled_image()
+
+        if self._scaled_foot is None:
+            return 0, 0, self.width(), self.height()
+
+        xo, yo = self._scaled_offset
+
+        return (
+            xo,
+            yo,
+            self._scaled_foot.width(),
+            self._scaled_foot.height()
+        )
+
+    def resizeEvent(self, event):
+        self._scaled_foot = None
+        self._scaled_size = None
+        super().resizeEvent(event)
 
     def mousePressEvent(self, e):
         if not self.setup_mode: return
@@ -242,9 +284,9 @@ class FootWidget(QWidget):
         # heatmap blobs
         for i,(px,py) in enumerate(self.pos):
             cx = xo+px/100*iW; cy = yo+py/100*iH
-            t = max(0,min(1,self.vals[i]/3.3))
+            t = max(0,min(1,self.vals[i]/2.3))
             R = int(iW*0.18)
-            for r in range(R,0,-2):
+            for r in range(R,0,-4):
                 c = heat_color(t,(1-r/R)*0.65)
                 p.setBrush(QBrush(c)); p.setPen(Qt.PenStyle.NoPen)
                 p.drawEllipse(int(cx-r),int(cy-r),r*2,r*2)
@@ -263,13 +305,15 @@ class FootWidget(QWidget):
         # sensor dots
         for i,(px,py) in enumerate(self.pos):
             cx=xo+px/100*iW; cy=yo+py/100*iH
-            t=max(0,min(1,self.vals[i]/3.3))
+            t=max(0,min(1,self.vals[i]/2.3))
             p.setBrush(QBrush(heat_color(t,1.0)))
             p.setPen(QPen(QColor(255,255,255,200),1.5))
             p.drawEllipse(int(cx-7),int(cy-7),14,14)
             p.setPen(QPen(Qt.GlobalColor.white))
             p.setFont(QFont('Arial',7,QFont.Weight.Bold))
             p.drawText(int(cx-4),int(cy+4),str(i+1))
+
+
 
 # ── Mini Chart ─────────────────────────────────────────────────
 class MiniChart(QFrame):
@@ -700,7 +744,7 @@ class MainWindow(QMainWindow):
             panel.pres_chart.update()
             panel.acc_chart.update()
             panel.gyro_chart.update()
-            panel.foot_widget.update()
+            # panel.foot_widget.update()
         self._record_tick()
 
     def open_setup(self):
