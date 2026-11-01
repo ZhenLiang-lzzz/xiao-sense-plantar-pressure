@@ -4,9 +4,7 @@ PyQt6==6.11.0
 PyQt6-Qt6==6.11.1
 PyQt6_sip==13.11.1
 pyserial==3.5
-qasync==0.28.0
 typing_extensions==4.15.0
-websockets==16.0
 winrt-runtime==3.2.1
 winrt-Windows.Devices.Bluetooth==3.2.1
 winrt-Windows.Devices.Bluetooth.Advertisement==3.2.1
