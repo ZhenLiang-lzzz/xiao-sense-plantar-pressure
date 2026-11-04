@@ -59,6 +59,7 @@ SIDE_LIFT_HOLD = 0.999 # height kept per sample at rest, about a 20 s time const
 SIDE_REST_ACC  = 0.05  # g from 1 g, and
 SIDE_REST_GYRO = 30    # deg/s, below which the foot counts as still
 WEIGHT_MAX_DIFF = 20   # percentage points between feet before the bar turns red and blue
+ZERO_WINDOW    = 50    # frames the pressure zero is measured over, 1 s at 50 Hz
 # one row per frame received from one foot, so a dropout shows up as a gap in that foot's rows
 RECORD_HEADER_V2 = ['t','foot'] + [f'S{i+1}' for i in range(6)] + IMU_KEYS
 RECORD_HEADER = ['t','foot','seq','board_ms'] + RECORD_HEADER_V2[2:]
@@ -694,6 +695,8 @@ class FootPanel(QWidget):
         self._ble_worker = None
         self.is_connected = False
         self.load = None  # sum of the latest pressure values
+        self.zero = [0.0]*6  # subtracted from each channel before display, never from the recording
+        self._recent = deque(maxlen=ZERO_WINDOW)  # raw pressure values the zero is taken from
         self._setup_ui()
 
     def _setup_ui(self):
@@ -712,7 +715,11 @@ class FootPanel(QWidget):
         self.btn_disc   = QPushButton("Disconnect")
         self.btn_disc.setEnabled(False)
         self.btn_disc.setStyleSheet("color:#E24B4A")
-        for b in [self.btn_serial, self.btn_ble, self.btn_disc]:
+        self.btn_zero = QPushButton("Zero")
+        self.btn_zero.setCheckable(True)
+        self.btn_zero.setToolTip("Treat the pressure of the last second as zero. Click again to clear.")
+        self.btn_zero.toggled.connect(self._toggle_zero)
+        for b in [self.btn_zero, self.btn_serial, self.btn_ble, self.btn_disc]:
             b.setFont(QFont('Arial',11))
             b.setMinimumHeight(30)
         self.btn_serial.clicked.connect(self._connect_serial)
@@ -721,6 +728,7 @@ class FootPanel(QWidget):
         hdr.addWidget(title)
         hdr.addStretch()
         hdr.addWidget(self.status_lbl)
+        hdr.addWidget(self.btn_zero)
         hdr.addWidget(self.btn_serial)
         hdr.addWidget(self.btn_ble)
         hdr.addWidget(self.btn_disc)
@@ -879,9 +887,18 @@ class FootPanel(QWidget):
             self.apply_snapshot(vals, imu)
             self.frame_received.emit(t, self.side, vals, imu, seq, board_ms)
 
+    def _toggle_zero(self, on):
+        if on and not self._recent:
+            self.btn_zero.setChecked(False)
+            return
+        # the highest reading in the window, so its noise does not show either
+        self.zero = [max(ch) for ch in zip(*self._recent)] if on else [0.0]*6
+
     def apply_snapshot(self, vals, imu):
         """Render a set of sensor values, whether live-parsed or replayed from a recording."""
         if vals is not None:
+            self._recent.append(vals)
+            vals = [max(v-z, 0.0) for v,z in zip(vals, self.zero)]
             for i,v in enumerate(vals):
                 self.pres_chart.push(f'S{i+1}',v)
             self.foot_widget.update_vals(vals)

@@ -40,6 +40,8 @@ python pressure_monitor.py
 
 Connect each foot from its own panel over **Serial** (pick a COM port from the list) or **BLE** (scans for devices advertising as `Pressure-*`). From the top bar, use **Position Setup** to calibrate sensor placement on the foot outline (saved between runs), **Record** to log a session to CSV, and **Replay** to play a recorded session back through the same live views.
 
+**Zero** on each foot's panel treats the pressure of the last second as zero, to hide sensor noise and the pressure of the sock itself. Click it again to clear. It only changes the display: recordings keep the raw values.
+
 ### Recording format
 
 Each CSV row is one frame from one foot:
